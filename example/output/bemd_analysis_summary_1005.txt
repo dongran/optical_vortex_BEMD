@@ -1,0 +1,19 @@
+BEMD Analysis Results Summary
+============================
+
+Target step: 1005
+Spatial resolution: 560 x 560
+Original field range: [2.58e+01, 2.58e+05]
+IMF1 field range: [1.31e+01, 7.08e+04]
+Denoised field range: [1.43e+01, 1.46e+05]
+
+Energy Analysis:
+Original energy: 2.15e+15
+IMF1 energy: 4.97e+13 (2.3%)
+Denoised energy: 9.92e+14 (46.1%)
+
+Status: Using real BEMD results
+
+Generated files:
+- bemd_analysis_1005.png: Main BEMD analysis
+- bemd_analysis_summary_1005.txt: This summary
