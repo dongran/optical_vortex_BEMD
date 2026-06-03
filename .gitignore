@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+python_output/
+*.npz
+*.mp4
+*.png

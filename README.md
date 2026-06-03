@@ -22,12 +22,12 @@ This project demonstrates the application of BEMD to optical vortex analysis, sp
 ## Method
 
 ### BEMD Processing Logic
-1. **Component Separation**: Process E, V1, V2, V3 components separately
-2. **IMF Extraction**: Extract 3 Intrinsic Mode Functions (IMFs) for each component
-   - IMF1: High-frequency noise component
-   - IMF2 + Residual: Main optical vortex structure
-3. **Field Reconstruction**: Combine components to reconstruct field intensity
-4. **Visualization**: Generate comparative analysis plots
+1. **Vector components only**: Run BEMD on `V1=Ex`, `V2=Ey`, `V3=Ez` separately. Do **not** decompose scalar `|E|` directly for the main optical-vortex result.
+2. **IMF extraction**: Extract 3 IMFs per vector component (`nimfs=3`)
+   - IMF1: High-frequency noise
+   - IMF2 + residue: Denoised optical-vortex structure
+3. **Field reconstruction**: Synthesize magnitude fields from vector IMFs, e.g. `|E_den| = sqrt((V1_2+V1_r)^2 + (V2_2+V2_r)^2 + (V3_2+V3_r)^2)`
+4. **Visualization**: Summary panels (original / IMF1 / denoised) and vector-field quiver plots
 
 ### Physical Significance
 - **Original Field**: Complete electromagnetic field including noise
@@ -181,12 +181,42 @@ The processing has been validated against reference implementations:
 - **Research Tool**: Framework for optical vortex beam analysis
 - **Educational**: Demonstration of advanced signal processing techniques
 
+## Loam1 batch workflow (canonical)
+
+Use `bemd_python_loam1_pipeline.py` with the sibling [`BEMD_Python`](https://github.com/ikuno/BEMD_Python) library. Input CSV files live in the parent repo at `optical_vortex/data/loam1/exy<step>.csv` (not in this submodule).
+
+```bash
+# From the monorepo root (Learning_HHT_FDTD_simulation)
+python optical_vortex/optical_vortex_BEMD/bemd_python_loam1_pipeline.py \
+  --input-dir optical_vortex/data/loam1 \
+  --start-step 600 \
+  --end-step 2000 \
+  --crop-size 560 \
+  --workers 4
+```
+
+Defaults aligned with optical-vortex physics:
+
+| Setting | Value | Notes |
+|--------|--------|--------|
+| BEMD inputs | `V1`, `V2`, `V3` only | Scalar `|E|` is stored for display, not decomposed unless `--decompose-e` |
+| `nimfs` | 3 | IMF1 = noise; IMF2+residue = vortex envelope |
+| `crop-size` | 560 | Center crop on the vortex region |
+| Denoised \|E\| | Vector synthesis | Matches MATLAB scalar-`E` residue within ~1% corr on step 600 |
+| Outputs | `python_output/loam1_steps_*/results/step_*.npz` | Resume-friendly; frames/videos under `frames/` |
+
+Useful flags:
+
+- `--workers N` — parallel over time steps (recommended on multi-core CPUs)
+- `--no-frames --no-video` — BEMD only, faster validation
+- `--overwrite-frames` — regenerate PNG/MP4 from existing `.npz` without re-running BEMD
+- `--crop-size 500 --nimfs 2` — closer to legacy MATLAB `.mat` files in `data/loam1`
+
+Legacy MATLAB example (`example/step1` → `step2_bemd_processing.m` → `step3`) remains for single-step reference; batch production uses the Python pipeline above.
+
 ## Extension
 
-To process multiple time steps:
-1. Modify `target_step` parameter in each script
-2. Update file paths and loops accordingly
-3. Consider memory and processing time requirements
+For other datasets, point `--input-dir` at a folder of `exy<step>.csv` files with the same 5-column format (`X,Y,ex,ey,ez`, 3 header rows).
 
 ## Citation
 
