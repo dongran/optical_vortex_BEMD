@@ -1,28 +1,25 @@
 #!/usr/bin/env bash
-# Re-run BEMD for loam0..loam3 into NEW output directories (does not touch old runs).
+# Batch BEMD for loam0..loam3, steps 2000-4000 (same pipeline as 600-2000).
 #
-# Physical pipeline (canonical):
+# Pipeline:
 #   - BEMD on Ex/Ey/Ez (V1/V2/V3) only
-#   - Remove IMF1 per component, then synthesize |E|
-#   - Fixed colorbar across all frames in each video
-#   - gridfit linear solver: normal (fast Python path; close to previous runtime)
+#   - vector-denoised: remove IMF1 per component, synthesize |E|
+#   - Fixed colorbar across frames / MP4
+#   - gridfit linear solver: normal (fast)
 #
-# Old results stay in:
-#   python_output/loam{N}_steps_0600_2000/
-# New results go to:
-#   python_output/loam{N}_vector_normal_steps_0600_2000/
+# Output (does not touch 600-2000 results):
+#   python_output/loam{N}_vector_normal_steps_2000_4000/
 #
-# Usage (recommended inside screen):
+# Usage (inside screen):
 #   cd /path/to/Learning_HHT_FDTD_simulation
-#   bash optical_vortex/optical_vortex_BEMD/run_all_loam_vector_backslash.sh
+#   bash optical_vortex/optical_vortex_BEMD/run_all_loam_vector_normal_2000_4000.sh
 #
 # Optional overrides:
-#   WORKERS=16 START_STEP=600 END_STEP=2000 bash .../run_all_loam_vector_backslash.sh
-#   OUTPUT_SUFFIX=my_tag bash ...          # loam1_my_tag_steps_0600_2000
-#   DATASETS="loam1 loam3" bash ...        # subset only
-#   NO_FRAMES=1 bash ...                   # skip PNG/MP4 (BEMD only)
-#   LIMIT_STEPS=3 bash ...                 # smoke test per dataset
-#   CONTINUE_ON_ERROR=1 bash ...           # keep going if one dataset fails
+#   WORKERS=16 bash .../run_all_loam_vector_normal_2000_4000.sh
+#   DATASETS="loam1 loam3" bash ...
+#   NO_FRAMES=1 bash ...              # BEMD only (~114GB total, saves ~10GB)
+#   LIMIT_STEPS=3 bash ...            # smoke test
+#   CONTINUE_ON_ERROR=1 bash ...      # continue if one dataset fails
 
 set -euo pipefail
 
@@ -31,8 +28,8 @@ PIPELINE="${REPO_ROOT}/optical_vortex/optical_vortex_BEMD/bemd_python_loam1_pipe
 LOG_DIR="${REPO_ROOT}/optical_vortex/optical_vortex_BEMD/python_output/logs"
 mkdir -p "$LOG_DIR"
 
-START_STEP="${START_STEP:-600}"
-END_STEP="${END_STEP:-2000}"
+START_STEP="${START_STEP:-2000}"
+END_STEP="${END_STEP:-4000}"
 WORKERS="${WORKERS:-16}"
 CROP_SIZE="${CROP_SIZE:-560}"
 NIMFS="${NIMFS:-3}"
@@ -87,13 +84,13 @@ run_one_dataset() {
 
   echo ""
   echo "================================================================"
-  echo "=== ${dataset} vector BEMD (new output, no overwrite of old) ==="
+  echo "=== ${dataset} vector BEMD steps ${START_STEP}-${END_STEP} ==="
   echo "================================================================"
   echo "input:   $input_dir"
   echo "output:  $output_dir"
   echo "steps:   $START_STEP .. $END_STEP"
   echo "crop:    $CROP_SIZE, nimfs=$NIMFS"
-  echo "mode:    vector-denoised (Ex/Ey/Ez minus IMF1 -> |E|)"
+  echo "mode:    vector-denoised"
   echo "gridfit: $GRIDFIT_LINEAR_SOLVER"
   echo "workers: $WORKERS"
   echo "log:     $log_file"
@@ -106,7 +103,7 @@ run_one_dataset() {
 }
 
 {
-  echo "=== batch: all loam vector normal ==="
+  echo "=== batch: loam0-3 vector_normal ${START_STEP}-${END_STEP} ==="
   echo "repo:     $REPO_ROOT"
   echo "datasets: $DATASETS"
   echo "suffix:   $OUTPUT_SUFFIX"
