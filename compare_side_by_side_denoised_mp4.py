@@ -52,13 +52,43 @@ def list_steps(results_dir: Path, steps: list[int]) -> list[int]:
     return available
 
 
-def load_mat_e_residue(data_root: Path, dataset: str, step: int, mat_start_step: int) -> np.ndarray | None:
+def load_mat_stack(data_root: Path, dataset: str, step: int, mat_start_step: int, component: str) -> np.ndarray | None:
     mat_index = step - mat_start_step
-    path = data_root / dataset / f"{dataset}data_BIMF{mat_index}_E.mat"
+    path = data_root / dataset / f"{dataset}data_BIMF{mat_index}_{component}.mat"
     if not path.exists():
         return None
-    array = np.asarray(loadmat(path)[MAT_VAR["E"]], dtype=float)
-    return array[:, :, -1]
+    return np.asarray(loadmat(path)[MAT_VAR[component]], dtype=float)
+
+
+def load_mat_target(
+    data_root: Path,
+    dataset: str,
+    step: int,
+    mat_start_step: int,
+    matlab_mode: str,
+) -> tuple[np.ndarray, str] | None:
+    if matlab_mode in ("scalar-e-residue", "scalar-e-denoised"):
+        array = load_mat_stack(data_root, dataset, step, mat_start_step, "E")
+        if array is None:
+            return None
+        if matlab_mode == "scalar-e-residue":
+            return array[:, :, -1], "MATLAB E residue"
+        return array[:, :, 1:].sum(axis=2), "MATLAB E without IMF1"
+
+    stacks = [
+        load_mat_stack(data_root, dataset, step, mat_start_step, component)
+        for component in ("V1", "V2", "V3")
+    ]
+    if any(stack is None for stack in stacks):
+        return None
+    arrays = [np.asarray(stack, dtype=float) for stack in stacks if stack is not None]
+    if matlab_mode == "vector-residue":
+        components = [array[:, :, -1] for array in arrays]
+        return np.sqrt(sum(component**2 for component in components)), "MATLAB vector residue"
+    if matlab_mode == "vector-denoised":
+        components = [array[:, :, 1:].sum(axis=2) for array in arrays]
+        return np.sqrt(sum(component**2 for component in components)), "MATLAB vector without IMF1"
+    raise ValueError(f"Unsupported matlab_mode: {matlab_mode}")
 
 
 def python_denoised(npz_path: Path) -> np.ndarray:
@@ -174,21 +204,23 @@ def build_jobs_python_matlab(
     python_dir: Path,
     data_root: Path,
     mat_start_step: int,
+    matlab_mode: str,
 ) -> list[FrameJob]:
     jobs: list[FrameJob] = []
     for step in steps:
         npz_path = Path(python_dir) / "results" / f"step_{step:04d}.npz"
-        mat_residue = load_mat_e_residue(data_root, dataset, step, mat_start_step)
-        if mat_residue is None or not npz_path.exists():
+        mat_target = load_mat_target(data_root, dataset, step, mat_start_step, matlab_mode)
+        if mat_target is None or not npz_path.exists():
             continue
+        mat_array, mat_label = mat_target
         py = python_denoised(npz_path)
-        py = match_shape(mat_residue.shape, py)
+        py = match_shape(mat_array.shape, py)
         jobs.append(
             FrameJob(
                 step=step,
-                left=mat_residue,
+                left=mat_array,
                 right=py,
-                left_label="MATLAB E residue",
+                left_label=mat_label,
                 right_label="Python vector denoised",
             )
         )
@@ -201,6 +233,7 @@ def render_dataset(
     output_dir: Path,
     fps: float,
     comparison_name: str,
+    matlab_mode: str,
 ) -> None:
     if not jobs:
         print(f"[{dataset}] no frames to render.")
@@ -225,6 +258,7 @@ def render_dataset(
         "vmax": vmax,
         "left_label": jobs[0].left_label,
         "right_label": jobs[0].right_label,
+        "matlab_mode": matlab_mode,
         "video": str(video_path),
     }
     with (output_dir / f"{dataset}_{comparison_name}_meta.json").open("w", encoding="utf-8") as handle:
@@ -244,6 +278,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--step-stride", type=int, default=1)
     parser.add_argument("--mat-start-step", type=int, default=600)
     parser.add_argument("--fps", type=float, default=12.0)
+    parser.add_argument(
+        "--matlab-mode",
+        choices=("scalar-e-residue", "scalar-e-denoised", "vector-residue", "vector-denoised"),
+        default="scalar-e-residue",
+        help=(
+            "MATLAB target for python-matlab comparison. The old behavior is "
+            "scalar-e-residue. Use vector-denoised for V1/V2/V3 remove-IMF1 then norm2."
+        ),
+    )
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -284,10 +327,17 @@ def main() -> int:
             python_dir = python_output / args.python_dir_template.format(dataset=dataset)
             available = list_steps(python_dir / "results", steps)
             jobs = build_jobs_python_matlab(
-                dataset, available, python_dir, args.data_root, args.mat_start_step
+                dataset, available, python_dir, args.data_root, args.mat_start_step, args.matlab_mode
             )
         print(f"[{dataset}] rendering {len(jobs)} side-by-side frames ({args.comparison})...")
-        render_dataset(dataset, jobs, comparison_dir, fps=args.fps, comparison_name=args.comparison)
+        render_dataset(
+            dataset,
+            jobs,
+            comparison_dir,
+            fps=args.fps,
+            comparison_name=args.comparison,
+            matlab_mode=args.matlab_mode,
+        )
 
     print(f"Done. Outputs in {comparison_dir}")
     return 0
