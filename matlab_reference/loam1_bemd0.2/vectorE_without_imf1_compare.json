@@ -1,0 +1,75 @@
+{
+  "source": "bemd0.2",
+  "note": "|E|=sqrt(sum(Vk_without_IMF1^2)); MATLAB cost threshold 0.2",
+  "rows": [
+    {
+      "bimf": 117,
+      "step": 717,
+      "matlab_mode_amp": 76737.84686403479,
+      "matlab_mode_phase": -0.9261470365133174,
+      "prod_wo_corr": 0.9813812809212088,
+      "prod_wo_rel": 0.2157318643579208,
+      "prod_res_corr": 0.8945565607064835,
+      "prod_res_rel": 0.3860629255508834,
+      "prod_mode_amp": 76757.55855902313,
+      "aln_wo_corr": 0.9813812809004416,
+      "aln_wo_rel": 0.2157318643703317,
+      "aln_mode_amp": 76757.55856307826
+    },
+    {
+      "bimf": 512,
+      "step": 1112,
+      "matlab_mode_amp": 77283.66924377908,
+      "matlab_mode_phase": -2.3641985445415736,
+      "prod_wo_corr": 0.9824338616293297,
+      "prod_wo_rel": 0.2089793539268683,
+      "prod_res_corr": 0.9157186157375559,
+      "prod_res_rel": 0.3628951022445788,
+      "prod_mode_amp": 77339.19665268995
+    },
+    {
+      "bimf": 1100,
+      "step": 1700,
+      "matlab_mode_amp": 76937.74707400416,
+      "matlab_mode_phase": 2.321425440612272,
+      "prod_wo_corr": 0.9826390384901126,
+      "prod_wo_rel": 0.21306963089601472,
+      "prod_res_corr": 0.810094670811511,
+      "prod_res_rel": 0.5207735603141964,
+      "prod_mode_amp": 76953.38831049665
+    },
+    {
+      "bimf": 1123,
+      "step": 1723,
+      "matlab_mode_amp": 76828.91413098841,
+      "matlab_mode_phase": -0.6896902057158915,
+      "prod_wo_corr": 0.9827244884364601,
+      "prod_wo_rel": 0.21272505866645297,
+      "prod_res_corr": 0.7996383055717989,
+      "prod_res_rel": 0.517785290823679,
+      "prod_mode_amp": 76821.33960243997
+    },
+    {
+      "bimf": 1137,
+      "step": 1737,
+      "matlab_mode_amp": 76711.92408681028,
+      "matlab_mode_phase": -2.5073032234525994,
+      "prod_wo_corr": 0.9813665429418098,
+      "prod_wo_rel": 0.20717444696924148,
+      "prod_res_corr": 0.855177011096144,
+      "prod_res_rel": 0.7142488031734675,
+      "prod_mode_amp": 76702.43803521682
+    },
+    {
+      "bimf": 1219,
+      "step": 1819,
+      "matlab_mode_amp": 77238.45856655577,
+      "matlab_mode_phase": -0.6837851002052375,
+      "prod_wo_corr": 0.982345677612729,
+      "prod_wo_rel": 0.21282009728996543,
+      "prod_res_corr": 0.7772860101287677,
+      "prod_res_rel": 0.5108998243291325,
+      "prod_mode_amp": 77243.17328571188
+    }
+  ]
+}

@@ -41,6 +41,7 @@ ARGS=(
   --decompose-e
   --reconstruction-mode matlab-e-residue
   --gridfit-linear-solver "$GRIDFIT_LINEAR_SOLVER"
+  --matlab-compatible
   --workers "$WORKERS"
   --threads-per-worker 1
   --fps "$FPS"

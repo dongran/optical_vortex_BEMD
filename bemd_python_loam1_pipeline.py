@@ -184,6 +184,14 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--matlab-compatible",
+        action="store_true",
+        help=(
+            "Strict bemd.m compatibility: unbounded sift, augmented backslash/LSQR, "
+            "and errors instead of Python's insufficient-extrema/NaN fallbacks."
+        ),
+    )
+    parser.add_argument(
         "--workers",
         type=int,
         default=1,
@@ -278,6 +286,7 @@ def configure_bemd(args: argparse.Namespace) -> Callable[[np.ndarray, int], np.n
             max_iterations=max_iterations,
             gridfit_smoothness=args.gridfit_smoothness,
             gridfit_solver=args.gridfit_linear_solver,
+            matlab_compatible=bool(args.matlab_compatible),
         )
 
     return configured_bemd
@@ -324,11 +333,33 @@ def read_step_components(csv_path: Path, crop_size: int) -> tuple[dict[str, np.n
             f"Grid shape mismatch for {csv_path}: nx={nx}, ny={ny}, rows={len(data)}"
         )
 
-    # CSV rows are ordered by y with x changing fastest. For loam1 nx == ny,
-    # but keeping (ny, nx) makes the axis meaning explicit.
-    ex_2d = ex.reshape(ny, nx)
-    ey_2d = ey.reshape(ny, nx)
-    ez_2d = ez.reshape(ny, nx)
+    # Build the physical (y, x) grid from coordinates instead of relying on CSV
+    # row order. This removes the square-grid reshape/transpose ambiguity between
+    # the legacy MATLAB loader and the original Python port.
+    x_unique = np.sort(np.unique(x_coords))
+    y_unique = np.sort(np.unique(y_coords))
+    x_index = np.searchsorted(x_unique, x_coords)
+    y_index = np.searchsorted(y_unique, y_coords)
+    if (
+        np.any(x_index < 0)
+        or np.any(x_index >= nx)
+        or np.any(y_index < 0)
+        or np.any(y_index >= ny)
+    ):
+        raise ValueError(f"Coordinate indexing failed for {csv_path}")
+    flat_index = y_index * nx + x_index
+    if np.unique(flat_index).size != flat_index.size:
+        raise ValueError(f"Duplicate (x,y) cells found in {csv_path}")
+    occupied = np.zeros((ny, nx), dtype=bool)
+    occupied[y_index, x_index] = True
+    if not np.all(occupied):
+        raise ValueError(f"Missing (x,y) cells found in {csv_path}")
+    ex_2d = np.empty((ny, nx), dtype=np.float64)
+    ey_2d = np.empty((ny, nx), dtype=np.float64)
+    ez_2d = np.empty((ny, nx), dtype=np.float64)
+    ex_2d[y_index, x_index] = ex
+    ey_2d[y_index, x_index] = ey
+    ez_2d[y_index, x_index] = ez
     e_abs = np.sqrt(ex_2d**2 + ey_2d**2 + ez_2d**2)
 
     components = {

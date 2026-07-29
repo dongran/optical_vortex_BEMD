@@ -4,3 +4,6 @@ python_output/
 *.npz
 *.mp4
 *.png
+
+# Large MATLAB BIMF reference dumps
+matlab_reference/**/*.mat
